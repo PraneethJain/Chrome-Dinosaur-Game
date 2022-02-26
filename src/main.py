@@ -1,5 +1,5 @@
 import pygame as pg
-from random import randrange
+from random import choice
 
 pg.init()
 
@@ -20,7 +20,8 @@ class Player(pg.sprite.Sprite):
         super().__init__()
         self.image = pg.image.load("assets\dino\dino_1.png")
         self.walk = [
-            pg.image.load(f"assets\dino\dino_{i}.png").convert_alpha() for i in range(1, 5)
+            pg.image.load(f"assets\dino\dino_{i}.png").convert_alpha()
+            for i in range(1, 5)
         ]
         self.rect = self.image.get_rect(
             center=(
@@ -34,7 +35,7 @@ class Player(pg.sprite.Sprite):
     def get_input(self):
         keys = pg.key.get_pressed()
         if keys[pg.K_SPACE] and self.rect.bottom >= ground_level:
-            self.gravity = -15
+            self.gravity = -20
 
     def apply_gravity(self):
         self.gravity += 1
@@ -54,8 +55,34 @@ class Player(pg.sprite.Sprite):
         self.apply_gravity()
 
 
+obstacle_imgs = (
+    [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 4)]
+    + [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 3)]
+    + [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 2)]
+)
+
+
+class Obstacle(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+
+        self.image = choice(obstacle_imgs)
+        self.rect = self.image.get_rect(
+            center=(WIDTH, ground_level - self.image.get_height() / 2)
+        )
+
+    def move_left(self):
+        self.rect.x -= 5
+
+    def update(self):
+        self.move_left()
+
+
 dino = pg.sprite.GroupSingle()
 dino.add(Player())
+
+obstacles = pg.sprite.Group()
+obstacles.add(Obstacle())
 
 while True:
 
@@ -63,7 +90,9 @@ while True:
     screen.blit(ground, ground_pos)
 
     dino.update()
+    obstacles.update()
     dino.draw(screen)
+    obstacles.draw(screen)
 
     for event in pg.event.get():
         if event.type == pg.QUIT:
