@@ -29,6 +29,11 @@ class Player(pg.sprite.Sprite):
                 ground_level - self.image.get_height() / 2,
             )
         )
+
+        # To make hitbox slightly smaller than the image itself
+        self.rect.w *= 0.9
+        self.rect.h *= 0.9
+
         self.gravity = 0
         self.animation_index = 0
 
@@ -65,38 +70,64 @@ obstacle_imgs = (
 class Obstacle(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-
         self.image = choice(obstacle_imgs)
         self.rect = self.image.get_rect(
             center=(WIDTH, ground_level - self.image.get_height() / 2)
         )
 
-    def move_left(self):
-        self.rect.x -= 5
+    def move(self):
+        self.rect.x -= 8
+        if self.rect.right < 0:
+            self.kill()
+            del self
 
     def update(self):
-        self.move_left()
+        self.move()
 
 
-dino = pg.sprite.GroupSingle()
-dino.add(Player())
-
-obstacles = pg.sprite.Group()
-obstacles.add(Obstacle())
-
-while True:
-
-    screen.fill("Black")
-    screen.blit(ground, ground_pos)
-
-    dino.update()
-    obstacles.update()
-    dino.draw(screen)
-    obstacles.draw(screen)
-
+def handleEvents(scene):
     for event in pg.event.get():
         if event.type == pg.QUIT:
             raise SystemExit
+        if (scene == "main") and (event.type == obstacle_event):
+            obstacles.add(Obstacle())
+
+
+# Player
+dino = pg.sprite.GroupSingle()
+dino_sprite = Player()
+dino.add(dino_sprite)
+
+# Obstacles
+obstacle_event = pg.USEREVENT + 1
+pg.time.set_timer(obstacle_event, 1300)
+obstacles = pg.sprite.Group()
+obstacles.add(Obstacle())
+
+temp = pg.font.SysFont(None, 50)
+temp_text = temp.render("Game Over", True, "White")
+
+scene = "main"
+while True:
+
+    handleEvents(scene)
+    match (scene):
+
+        case "main":
+
+            screen.fill("Black")
+            screen.blit(ground, ground_pos)
+
+            dino.update()
+            obstacles.update()
+            dino.draw(screen)
+            obstacles.draw(screen)
+
+            if pg.sprite.spritecollide(dino_sprite, obstacles, False):
+                scene = "game_over"
+
+        case "game_over":
+            screen.blit(temp_text, (0, 0))
 
     clock.tick(60)
     pg.display.flip()
