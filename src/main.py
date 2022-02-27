@@ -54,14 +54,21 @@ class Player(pg.sprite.Sprite):
         if self.animation_index >= len(self.walk):
             self.animation_index = 0
         self.image = self.walk[int(self.animation_index)]
+        
 
+    def collide_check(self,sprite_group):
+        return pg.sprite.spritecollide(dino,sprite_group,False)
+    
     def update(self):
         self.animate()
         self.get_input()
         self.apply_gravity()
         # pg.draw.rect(screen, "Green", self.rect)
 
-
+    def reset(self):
+        self.__init__()
+        
+        
 obstacle_imgs = (
     [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 4)]
     + [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 3)]
@@ -122,16 +129,15 @@ while True:
         obstacles.update()
         player_group.draw(screen)
         obstacles.draw(screen)
-
-        if pg.sprite.spritecollide(dino, obstacles, False):
+        
+        if dino.collide_check(obstacles):
             scene = "game_over"
 
     elif scene == "game_over":
         screen.blit(temp_text, (0, 0))
-        dino=Player()
-        player_group.add(dino)
+        dino.reset()
         obstacles.empty()
-        scene = "main"
+        # scene = "main"
 
     clock.tick(60)
     pg.display.flip()
