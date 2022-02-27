@@ -1,5 +1,5 @@
 import pygame as pg
-from random import choice
+from random import choice, randrange
 from time import sleep
 
 pg.init()
@@ -54,11 +54,10 @@ class Player(pg.sprite.Sprite):
         if self.animation_index >= len(self.walk):
             self.animation_index = 0
         self.image = self.walk[int(self.animation_index)]
-        
 
-    def collide_check(self,sprite_group):
-        return pg.sprite.spritecollide(dino,sprite_group,False)
-    
+    def collide_check(self, sprite_group):
+        return pg.sprite.spritecollide(dino, sprite_group, False)
+
     def update(self):
         self.animate()
         self.get_input()
@@ -67,8 +66,8 @@ class Player(pg.sprite.Sprite):
 
     def reset(self):
         self.__init__()
-        
-        
+
+
 obstacle_imgs = (
     [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 4)]
     + [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 3)]
@@ -94,16 +93,36 @@ class Obstacle(pg.sprite.Sprite):
         self.move()
 
 
+class Cloud(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pg.image.load("assets\cloud.png").convert_alpha()
+        self.rect = self.image.get_rect(
+            center=(WIDTH * 1.5, randrange(50, HEIGHT / 2 - 50))
+        )
+
+    def move(self):
+        self.rect.x -= 3
+        if self.rect.right < 0:
+            self.kill()
+            del self
+
+    def update(self):
+        self.move()
+
+
 def handleEvents(scene):
     for event in pg.event.get():
         if event.type == pg.QUIT:
             raise SystemExit
         if (scene == "main") and (event.type == obstacle_event):
             obstacles.add(Obstacle())
+        if (scene == "main") and (event.type == cloud_event):
+            clouds.add(Cloud())
 
 # Player
 player_group = pg.sprite.GroupSingle()
-dino=Player()
+dino = Player()
 player_group.add(dino)
 
 # Obstacles
@@ -111,6 +130,12 @@ obstacle_event = pg.USEREVENT + 1
 pg.time.set_timer(obstacle_event, 1300)
 obstacles = pg.sprite.Group()
 obstacles.add(Obstacle())
+
+# Clouds
+cloud_event = pg.USEREVENT + 2
+pg.time.set_timer(cloud_event, 2000)
+clouds = pg.sprite.Group()
+clouds.add(Cloud())
 
 temp = pg.font.SysFont(None, 50)
 temp_text = temp.render("Game Over", True, "White")
@@ -127,9 +152,12 @@ while True:
 
         player_group.update()
         obstacles.update()
-        player_group.draw(screen)
+        clouds.update()
+
+        clouds.draw(screen)
         obstacles.draw(screen)
-        
+        player_group.draw(screen)
+
         if dino.collide_check(obstacles):
             scene = "game_over"
 
@@ -137,7 +165,8 @@ while True:
         screen.blit(temp_text, (0, 0))
         dino.reset()
         obstacles.empty()
-        # scene = "main"
+        clouds.empty()
+        scene = "main"
 
     clock.tick(60)
     pg.display.flip()
