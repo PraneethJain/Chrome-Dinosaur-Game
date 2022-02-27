@@ -1,5 +1,6 @@
 import pygame as pg
 from random import choice
+from time import sleep
 
 pg.init()
 
@@ -58,6 +59,7 @@ class Player(pg.sprite.Sprite):
         self.animate()
         self.get_input()
         self.apply_gravity()
+        # pg.draw.rect(screen, "Green", self.rect)
 
 
 obstacle_imgs = (
@@ -92,11 +94,10 @@ def handleEvents(scene):
         if (scene == "main") and (event.type == obstacle_event):
             obstacles.add(Obstacle())
 
-
 # Player
-dino = pg.sprite.GroupSingle()
-dino_sprite = Player()
-dino.add(dino_sprite)
+player_group = pg.sprite.GroupSingle()
+dino=Player()
+player_group.add(dino)
 
 # Obstacles
 obstacle_event = pg.USEREVENT + 1
@@ -111,23 +112,26 @@ scene = "main"
 while True:
 
     handleEvents(scene)
-    match (scene):
 
-        case "main":
+    if scene == "main":
 
-            screen.fill("Black")
-            screen.blit(ground, ground_pos)
+        screen.fill("Black")
+        screen.blit(ground, ground_pos)
 
-            dino.update()
-            obstacles.update()
-            dino.draw(screen)
-            obstacles.draw(screen)
+        player_group.update()
+        obstacles.update()
+        player_group.draw(screen)
+        obstacles.draw(screen)
 
-            if pg.sprite.spritecollide(dino_sprite, obstacles, False):
-                scene = "game_over"
+        if pg.sprite.spritecollide(dino, obstacles, False):
+            scene = "game_over"
 
-        case "game_over":
-            screen.blit(temp_text, (0, 0))
+    elif scene == "game_over":
+        screen.blit(temp_text, (0, 0))
+        dino=Player()
+        player_group.add(dino)
+        obstacles.empty()
+        scene = "main"
 
     clock.tick(60)
     pg.display.flip()
