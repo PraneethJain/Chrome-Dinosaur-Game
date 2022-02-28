@@ -22,7 +22,11 @@ class Player(pg.sprite.Sprite):
         self.image = pg.image.load("assets\dino\dino_1.png")
         self.walk = [
             pg.image.load(f"assets\dino\dino_{i}.png").convert_alpha()
-            for i in range(1, 5)
+            for i in range(3, 5)
+        ]
+        self.duck = [
+            pg.image.load(f"assets\dino\dino_{i}.png").convert_alpha()
+            for i in range(7, 9)
         ]
         self.rect = self.image.get_rect(
             center=(
@@ -31,17 +35,22 @@ class Player(pg.sprite.Sprite):
             )
         )
 
-        # To make hitbox slightly smaller than the image itself
-        self.rect.w *= 0.9
-        self.rect.h *= 0.9
+        # # To make hitbox slightly smaller than the image itself
+        # self.rect.w *= 0.9
+        # self.rect.h *= 0.9
 
         self.gravity = 0
         self.animation_index = 0
+        self.state = "walk"
 
     def get_input(self):
         keys = pg.key.get_pressed()
         if keys[pg.K_SPACE] and self.rect.bottom >= ground_level:
             self.gravity = -20
+        if keys[pg.K_DOWN]:
+            self.state = "duck"
+        else:
+            self.state = "walk"
 
     def apply_gravity(self):
         self.gravity += 1
@@ -49,14 +58,27 @@ class Player(pg.sprite.Sprite):
         if self.rect.bottom > ground_level:
             self.rect.bottom = ground_level
 
-    def animate(self):
-        self.animation_index += 0.05
+    def collide_check(self, sprite_group):
+        return pg.sprite.spritecollide(dino, sprite_group, False)
+
+    def animate_walk(self):
         if self.animation_index >= len(self.walk):
             self.animation_index = 0
         self.image = self.walk[int(self.animation_index)]
+        self.rect = self.image.get_rect(center=self.rect.center)
 
-    def collide_check(self, sprite_group):
-        return pg.sprite.spritecollide(dino, sprite_group, False)
+    def animate_duck(self):
+        if self.animation_index >= len(self.duck):
+            self.animation_index = 0
+        self.image = self.duck[int(self.animation_index)]
+        self.rect = self.image.get_rect(center=self.rect.center)
+
+    def animate(self):
+        self.animation_index += 0.05
+        if self.state == "walk":
+            self.animate_walk()
+        elif self.state == "duck":
+            self.animate_duck()
 
     def update(self):
         self.animate()
@@ -98,7 +120,7 @@ class Cloud(pg.sprite.Sprite):
         super().__init__()
         self.image = pg.image.load("assets\cloud.png").convert_alpha()
         self.rect = self.image.get_rect(
-            center=(WIDTH * 1.5, randrange(50, HEIGHT / 2 - 50))
+            center=(WIDTH * 1.5, randrange(50, HEIGHT // 2 - 50))
         )
 
     def move(self):
@@ -119,6 +141,7 @@ def handleEvents(scene):
             obstacles.add(Obstacle())
         if (scene == "main") and (event.type == cloud_event):
             clouds.add(Cloud())
+
 
 # Player
 player_group = pg.sprite.GroupSingle()
