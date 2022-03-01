@@ -42,6 +42,7 @@ class Player(pg.sprite.Sprite):
         self.gravity = 0
         self.animation_index = 0
         self.state = "walk"
+        self.done = False
 
     def get_input(self):
         keys = pg.key.get_pressed()
@@ -58,20 +59,32 @@ class Player(pg.sprite.Sprite):
         if self.rect.bottom > ground_level:
             self.rect.bottom = ground_level
 
-    def collide_check(self, sprite_group):
-        return pg.sprite.spritecollide(dino, sprite_group, False)
+    def collide_obstacles(self):
+        return pg.sprite.spritecollide(dino, obstacles, False)
+
+    def collide_ptera(self):
+        collided_pteras = pg.sprite.spritecollide(dino, pteras, False)
+        if collided_pteras:
+            if close_to(dino.rect.bottom, collided_pteras[0].rect.top):
+                self.gravity = -20
+            else:
+                return True
 
     def animate_walk(self):
         if self.animation_index >= len(self.walk):
             self.animation_index = 0
         self.image = self.walk[int(self.animation_index)]
-        self.rect = self.image.get_rect(center=self.rect.center)
+        if not self.done:
+            self.rect = self.image.get_rect(center=self.rect.center)
+            self.done = True
 
     def animate_duck(self):
         if self.animation_index >= len(self.duck):
             self.animation_index = 0
         self.image = self.duck[int(self.animation_index)]
-        self.rect = self.image.get_rect(center=self.rect.center)
+        if self.done:
+            self.rect = self.image.get_rect(center=self.rect.center)
+            self.done = False
 
     def animate(self):
         self.animation_index += 0.05
@@ -81,10 +94,10 @@ class Player(pg.sprite.Sprite):
             self.animate_duck()
 
     def update(self):
+        # pg.draw.rect(screen, "pink", self.rect)
         self.animate()
         self.get_input()
         self.apply_gravity()
-        # pg.draw.rect(screen, "Green", self.rect)
 
     def reset(self):
         self.__init__()
@@ -105,6 +118,10 @@ class Obstacle(pg.sprite.Sprite):
             center=(WIDTH, ground_level - self.image.get_height() / 2)
         )
 
+        # To make the hitbox slightly smaller
+        self.rect.w *= 0.9
+        self.rect.h *= 0.9
+
     def move(self):
         self.rect.x -= 8
         if self.rect.right < 0:
@@ -112,6 +129,7 @@ class Obstacle(pg.sprite.Sprite):
             del self
 
     def update(self):
+        # pg.draw.rect(screen, "green", self.rect)
         self.move()
 
 
@@ -133,14 +151,50 @@ class Cloud(pg.sprite.Sprite):
         self.move()
 
 
+class Ptera(pg.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = pg.image.load("assets\ptera\ptera_1.png")
+        self.fly = [pg.image.load(f"assets\ptera\ptera_{i}.png") for i in range(1, 3)]
+        self.rect = self.image.get_rect(center=(WIDTH * 1.5, HEIGHT // 1.5))
+        # To make the hitbox slightly smaller
+        self.rect.w *= 0.9
+        self.rect.h *= 0.9
+        self.animation_index = 0
+
+    def animate(self):
+        self.animation_index += 0.05
+        if self.animation_index >= len(self.fly):
+            self.animation_index = 0
+        self.image = self.fly[int(self.animation_index)]
+
+    def move(self):
+        self.rect.x -= 10
+        if self.rect.right < 0:
+            self.kill()
+            del self
+
+    def update(self):
+        # pg.draw.rect(screen, "red", self.rect)
+        self.animate()
+        self.move()
+
+
 def handleEvents(scene):
     for event in pg.event.get():
         if event.type == pg.QUIT:
             raise SystemExit
-        if (scene == "main") and (event.type == obstacle_event):
-            obstacles.add(Obstacle())
-        if (scene == "main") and (event.type == cloud_event):
-            clouds.add(Cloud())
+        if scene == "main":
+            if event.type == obstacle_event:
+                obstacles.add(Obstacle())
+            if event.type == cloud_event:
+                clouds.add(Cloud())
+            if event.type == ptera_event:
+                pteras.add(Ptera())
+
+
+def close_to(a, b):
+    return abs(a - b) < 8
 
 
 # Player
@@ -160,6 +214,12 @@ pg.time.set_timer(cloud_event, 2000)
 clouds = pg.sprite.Group()
 clouds.add(Cloud())
 
+# Pteras
+ptera_event = pg.USEREVENT + 3
+pg.time.set_timer(ptera_event, 4700)
+pteras = pg.sprite.Group()
+
+
 temp = pg.font.SysFont(None, 50)
 temp_text = temp.render("Game Over", True, "White")
 
@@ -176,12 +236,14 @@ while True:
         player_group.update()
         obstacles.update()
         clouds.update()
+        pteras.update()
 
         clouds.draw(screen)
         obstacles.draw(screen)
+        pteras.draw(screen)
         player_group.draw(screen)
 
-        if dino.collide_check(obstacles):
+        if dino.collide_obstacles() or dino.collide_ptera():
             scene = "game_over"
 
     elif scene == "game_over":
@@ -189,6 +251,7 @@ while True:
         dino.reset()
         obstacles.empty()
         clouds.empty()
+        pteras.empty()
         scene = "main"
 
     clock.tick(60)
