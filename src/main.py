@@ -35,6 +35,9 @@ class Player(pg.sprite.Sprite):
             )
         )
 
+        self.jump_sound = pg.mixer.Sound("sounds\jump.wav")
+        self.duck_sound = pg.mixer.Sound("sounds\duck.wav")
+        
         # # To make hitbox slightly smaller than the image itself
         # self.rect.w *= 0.9
         # self.rect.h *= 0.9
@@ -47,7 +50,7 @@ class Player(pg.sprite.Sprite):
     def get_input(self):
         keys = pg.key.get_pressed()
         if keys[pg.K_SPACE] and self.rect.bottom >= ground_level:
-            self.gravity = -20
+            self.jump()
         if keys[pg.K_DOWN]:
             self.state = "duck"
         else:
@@ -58,15 +61,19 @@ class Player(pg.sprite.Sprite):
         self.rect.y += self.gravity
         if self.rect.bottom > ground_level:
             self.rect.bottom = ground_level
+            
+    def jump(self):
+        self.gravity = -20
+        self.jump_sound.play()
 
     def collide_obstacles(self):
         return pg.sprite.spritecollide(dino, obstacles, False)
 
     def collide_ptera(self):
-        collided_pteras = pg.sprite.spritecollide(dino, pteras, False)
+        collided_pteras = pg.sprite.spritecollide(self, pteras, False)
         if collided_pteras:
-            if close_to(dino.rect.bottom, collided_pteras[0].rect.top):
-                self.gravity = -20
+            if close_to(self.rect.bottom, collided_pteras[0].rect.top):
+                self.jump()
             else:
                 return True
 
@@ -84,6 +91,7 @@ class Player(pg.sprite.Sprite):
         self.image = self.duck[int(self.animation_index)]
         if self.done:
             self.rect = self.image.get_rect(center=self.rect.center)
+            self.duck_sound.play()
             self.done = False
 
     def animate(self):
@@ -156,11 +164,13 @@ class Ptera(pg.sprite.Sprite):
         super().__init__()
         self.image = pg.image.load("assets\ptera\ptera_1.png")
         self.fly = [pg.image.load(f"assets\ptera\ptera_{i}.png") for i in range(1, 3)]
-        self.rect = self.image.get_rect(center=(WIDTH * 1.5, HEIGHT // 1.5))
+        self.rect = self.image.get_rect(midleft=(WIDTH, HEIGHT // 1.5))
         # To make the hitbox slightly smaller
         self.rect.w *= 0.9
         self.rect.h *= 0.9
         self.animation_index = 0
+        self.exist_sound = pg.mixer.Sound("sounds\ptera.wav")
+        self.exist_sound.play()
 
     def animate(self):
         self.animation_index += 0.05
