@@ -82,9 +82,11 @@ class Player(pg.sprite.Sprite):
         return pg.sprite.spritecollide(dino, obstacles, False)
 
     def collide_ptera(self):
+        global score
         collided_pteras = pg.sprite.spritecollide(self, pteras, False)
         if collided_pteras:
             if close_to(self.rect.bottom, collided_pteras[0].rect.top):
+                score += 10
                 self.jump()
             else:
                 return True
