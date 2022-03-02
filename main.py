@@ -1,17 +1,29 @@
 import pygame as pg
 from random import choice, randrange
-from time import sleep
+import sys
+import os
+
+
+def resource_path(relative_path):
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
 
 pg.init()
 
 WIDTH, HEIGHT = 800, 400
 screen = pg.display.set_mode((WIDTH, HEIGHT))
 pg.display.set_caption("Dinosaur Game")
-icon = pg.image.load("assets\dino\dino_1.png").convert()
+icon = pg.image.load(resource_path("assets\dino\dino_1.png")).convert()
 pg.display.set_icon(icon)
 clock = pg.time.Clock()
 
-ground = pg.image.load("assets\ground.png").convert()
+ground = pg.image.load(resource_path("assets\ground.png")).convert()
 ground_level = HEIGHT - ground.get_height()
 ground_pos = (0, ground_level)
 
@@ -21,11 +33,11 @@ class Player(pg.sprite.Sprite):
         super().__init__()
         self.image = pg.image.load("assets\dino\dino_1.png")
         self.walk = [
-            pg.image.load(f"assets\dino\dino_{i}.png").convert_alpha()
+            pg.image.load(resource_path(f"assets\dino\dino_{i}.png")).convert_alpha()
             for i in range(3, 5)
         ]
         self.duck = [
-            pg.image.load(f"assets\dino\dino_{i}.png").convert_alpha()
+            pg.image.load(resource_path(f"assets\dino\dino_{i}.png")).convert_alpha()
             for i in range(7, 9)
         ]
         self.rect = self.image.get_rect(
@@ -35,8 +47,8 @@ class Player(pg.sprite.Sprite):
             )
         )
 
-        self.jump_sound = pg.mixer.Sound("assets\sounds\jump.wav")
-        self.duck_sound = pg.mixer.Sound("assets\sounds\duck.wav")
+        self.jump_sound = pg.mixer.Sound(resource_path("assets\sounds\jump.wav"))
+        self.duck_sound = pg.mixer.Sound(resource_path("assets\sounds\duck.wav"))
 
         # # To make hitbox slightly smaller than the image itself
         # self.rect.w *= 0.9
@@ -112,9 +124,9 @@ class Player(pg.sprite.Sprite):
 
 
 obstacle_imgs = (
-    [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 4)]
-    + [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 3)]
-    + [pg.image.load(f"assets\cacti\cacti_small_{i}.png") for i in range(1, 2)]
+    [pg.image.load(resource_path(f"assets\cacti\cacti_small_{i}.png")) for i in range(1, 4)]
+    + [pg.image.load(resource_path(f"assets\cacti\cacti_small_{i}.png")) for i in range(1, 3)]
+    + [pg.image.load(resource_path(f"assets\cacti\cacti_small_{i}.png")) for i in range(1, 2)]
 )
 
 
@@ -123,7 +135,7 @@ class Obstacle(pg.sprite.Sprite):
         super().__init__()
         self.image = choice(obstacle_imgs)
         self.rect = self.image.get_rect(
-            center=(WIDTH, ground_level - self.image.get_height() // 2+2)
+            center=(WIDTH, ground_level - self.image.get_height() // 2 + 2)
         )
 
         # To make the hitbox slightly smaller
@@ -144,7 +156,7 @@ class Obstacle(pg.sprite.Sprite):
 class Cloud(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pg.image.load("assets\cloud.png").convert_alpha()
+        self.image = pg.image.load(resource_path("assets\cloud.png")).convert_alpha()
         self.rect = self.image.get_rect(
             center=(WIDTH * 1.5, randrange(50, HEIGHT // 2 - 50))
         )
@@ -162,14 +174,14 @@ class Cloud(pg.sprite.Sprite):
 class Ptera(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pg.image.load("assets\ptera\ptera_1.png")
-        self.fly = [pg.image.load(f"assets\ptera\ptera_{i}.png") for i in range(1, 3)]
+        self.image = pg.image.load(resource_path("assets\ptera\ptera_1.png"))
+        self.fly = [pg.image.load(resource_path(f"assets\ptera\ptera_{i}.png")) for i in range(1, 3)]
         self.rect = self.image.get_rect(midleft=(WIDTH, HEIGHT // 1.5))
         # To make the hitbox slightly smaller
         self.rect.w *= 0.8
         self.rect.h *= 0.8
         self.animation_index = 0
-        self.exist_sound = pg.mixer.Sound("assets\sounds\ptera.wav")
+        self.exist_sound = pg.mixer.Sound(resource_path("assets\sounds\ptera.wav"))
         self.exist_sound.play()
 
     def animate(self):
@@ -196,9 +208,9 @@ class Button(pg.sprite.Sprite):
         center_pos=(WIDTH // 2, HEIGHT // 2),
     ) -> None:
         super().__init__()
-        self.image = pg.image.load("assets\\restart_button.png").convert_alpha()
+        self.image = pg.image.load(resource_path("assets\\restart_button.png")).convert_alpha()
         self.rect = self.image.get_rect(center=center_pos)
-        self.click_sound = pg.mixer.Sound("assets\sounds\click.wav")
+        self.click_sound = pg.mixer.Sound(resource_path("assets\sounds\click.wav"))
 
     def pressed(self):
         if self.rect.collidepoint(pg.mouse.get_pos()) and any(pg.mouse.get_pressed()):
@@ -226,12 +238,13 @@ def close_to(a, b):
 
 def update_score():
     global score
-    score += 1/60
-    
+    score += 1 / 60
+
+
 def show_score(score):
-    score=str(int(score))
-    score_surf = font.render(score,True,"white")
-    screen.blit(score_surf,(WIDTH-score_surf.get_width()-10,10))
+    score = str(int(score))
+    score_surf = font.render(score, True, "white")
+    screen.blit(score_surf, (WIDTH - score_surf.get_width() - 10, 10))
 
 
 # Player
@@ -262,7 +275,7 @@ button = Button()
 button_group.add(button)
 
 # Score
-font = pg.font.Font("assets\\fonts\\regular.ttf",30)
+font = pg.font.Font(resource_path("assets\\fonts\\regular.ttf"), 30)
 score = 0
 
 scene = "main"
@@ -285,8 +298,7 @@ while True:
         obstacles.draw(screen)
         pteras.draw(screen)
         player_group.draw(screen)
-        show_score(score)        
-        
+        show_score(score)
 
         if dino.collide_obstacles() or dino.collide_ptera():
             scene = "game_over"
