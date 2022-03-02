@@ -31,7 +31,7 @@ ground_pos = (0, ground_level)
 class Player(pg.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pg.image.load("assets\dino\dino_1.png")
+        self.image = pg.image.load(resource_path("assets\dino\dino_1.png"))
         self.walk = [
             pg.image.load(resource_path(f"assets\dino\dino_{i}.png")).convert_alpha()
             for i in range(3, 5)
