@@ -37,7 +37,7 @@ class Player(pg.sprite.Sprite):
 
         self.jump_sound = pg.mixer.Sound("sounds\jump.wav")
         self.duck_sound = pg.mixer.Sound("sounds\duck.wav")
-        
+
         # # To make hitbox slightly smaller than the image itself
         # self.rect.w *= 0.9
         # self.rect.h *= 0.9
@@ -61,7 +61,7 @@ class Player(pg.sprite.Sprite):
         self.rect.y += self.gravity
         if self.rect.bottom > ground_level:
             self.rect.bottom = ground_level
-            
+
     def jump(self):
         self.gravity = -20
         self.jump_sound.play()
@@ -127,8 +127,8 @@ class Obstacle(pg.sprite.Sprite):
         )
 
         # To make the hitbox slightly smaller
-        self.rect.w *= 0.9
-        self.rect.h *= 0.9
+        self.rect.w *= 0.8
+        self.rect.h *= 0.8
 
     def move(self):
         self.rect.x -= 8
@@ -166,8 +166,8 @@ class Ptera(pg.sprite.Sprite):
         self.fly = [pg.image.load(f"assets\ptera\ptera_{i}.png") for i in range(1, 3)]
         self.rect = self.image.get_rect(midleft=(WIDTH, HEIGHT // 1.5))
         # To make the hitbox slightly smaller
-        self.rect.w *= 0.9
-        self.rect.h *= 0.9
+        self.rect.w *= 0.8
+        self.rect.h *= 0.8
         self.animation_index = 0
         self.exist_sound = pg.mixer.Sound("sounds\ptera.wav")
         self.exist_sound.play()
@@ -190,6 +190,23 @@ class Ptera(pg.sprite.Sprite):
         self.move()
 
 
+class Button(pg.sprite.Sprite):
+    def __init__(
+        self,
+        center_pos=(WIDTH // 2, HEIGHT // 2),
+    ) -> None:
+        super().__init__()
+        self.image = pg.image.load("assets\\restart_button.png").convert_alpha()
+        self.rect = self.image.get_rect(center=center_pos)
+        self.click_sound = pg.mixer.Sound("sounds\click.wav")
+
+    def pressed(self):
+        if self.rect.collidepoint(pg.mouse.get_pos()) and any(pg.mouse.get_pressed()):
+            self.click_sound.play()
+            return True
+        return False
+
+
 def handleEvents(scene):
     for event in pg.event.get():
         if event.type == pg.QUIT:
@@ -205,6 +222,16 @@ def handleEvents(scene):
 
 def close_to(a, b):
     return abs(a - b) < 8
+
+
+def update_score():
+    global score
+    score += 1/60
+    
+def show_score(score):
+    score=str(int(score))
+    score_surf = font.render(score,True,"white")
+    screen.blit(score_surf,(WIDTH-score_surf.get_width()-10,10))
 
 
 # Player
@@ -229,9 +256,14 @@ ptera_event = pg.USEREVENT + 3
 pg.time.set_timer(ptera_event, 4700)
 pteras = pg.sprite.Group()
 
+# Buttons
+button_group = pg.sprite.Group()
+button = Button()
+button_group.add(button)
 
-temp = pg.font.SysFont(None, 50)
-temp_text = temp.render("Game Over", True, "White")
+# Score
+font = pg.font.Font("fonts\\regular.ttf",30)
+score = 0
 
 scene = "main"
 while True:
@@ -247,22 +279,27 @@ while True:
         obstacles.update()
         clouds.update()
         pteras.update()
+        update_score()
 
         clouds.draw(screen)
         obstacles.draw(screen)
         pteras.draw(screen)
         player_group.draw(screen)
+        show_score(score)        
+        
 
         if dino.collide_obstacles() or dino.collide_ptera():
             scene = "game_over"
 
     elif scene == "game_over":
-        screen.blit(temp_text, (0, 0))
-        dino.reset()
-        obstacles.empty()
-        clouds.empty()
-        pteras.empty()
-        scene = "main"
+        button_group.draw(screen)
+        if button.pressed():
+            dino.reset()
+            obstacles.empty()
+            clouds.empty()
+            pteras.empty()
+            score = 0
+            scene = "main"
 
     clock.tick(60)
     pg.display.flip()
